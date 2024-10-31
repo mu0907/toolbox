@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>toolbox</title>
+  <style>
+    body {
+      width: 250px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+    }
+    .toolbar {
+      display: flex;
+      flex-direction: column;
+    }
+    input[type="text"], select, button {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    hr {
+      border: 0;
+      height: 1px;
+      background-color: #ccc;
+      margin: 20px 0;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 10px 0;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    li {
+      background-color: #fff;
+      padding: 8px;
+      border: 1px solid #ccc;
+      margin-bottom: 5px;
+      border-radius: 3px;
+    }
+    #userEmail {
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <input id="search" type="text" placeholder="検索...">
+    <select id="searchEngine">
+      <option value="google">Google</option>
+      <option value="yahoo">Yahoo</option>
+      <option value="bing">Bing</option>
+      <option value="duckduckgo">DuckDuckGo</option>
+      <option value="brave">Brave</option>
+    </select>
+    <button id="searchBtn">検索</button>
+    <button id="clearHistoryBtn">履歴を消去</button>
+    <hr>
+    <ul id="searchHistory"></ul>
+    <hr>
+    <button id="openTabsBtn">タブの管理</button>
+    <button id="blockAdsBtn">広告をブロック</button>
+    <button id="summaryBtn">ページの要約</button>
+    <button id="loginBtn">Googleアカウントでログイン</button>
+    <p id="userEmail"></p>
+    <button id="syncBtn">検索履歴を同期</button>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
