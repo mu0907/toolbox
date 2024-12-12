@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>カスタマイズ設定</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f4f4f4;
+      margin: 0;
+    }
+    .setting-item {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+    input[type="checkbox"], input[type="radio"] {
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <h1>カスタマイズ設定</h1>
+  <div class="setting-item">
+    <label>テーマ</label>
+    <input type="radio" name="theme" value="light" id="themeLight"> ライトモード
+    <input type="radio" name="theme" value="dark" id="themeDark"> ダークモード
+  </div>
+  <div class="setting-item">
+    <label>機能のオン／オフ</label>
+    <input type="checkbox" id="toggleAdBlock"> 広告ブロック
+    <input type="checkbox" id="toggleSummary"> ページ要約
+    <input type="checkbox" id="toggleSync"> 履歴同期
+  </div>
+  <div class="setting-item">
+    <label>有効な検索エンジン</label>
+    <input type="checkbox" id="enableGoogle"> Google
+    <input type="checkbox" id="enableYahoo"> Yahoo
+    <input type="checkbox" id="enableBing"> Bing
+    <input type="checkbox" id="enableDuckDuckGo"> DuckDuckGo
+    <input type="checkbox" id="enableBrave"> Brave
+  </div>
+  <button id="saveSettingsBtn">設定を保存</button>
+
+  <script src="customize.js"></script>
+</body>
+</html>

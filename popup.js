@@ -6,9 +6,7 @@ const searchHistory = document.getElementById('searchHistory');
 const openTabsBtn = document.getElementById('openTabsBtn');
 const blockAdsBtn = document.getElementById('blockAdsBtn');
 const summaryBtn = document.getElementById('summaryBtn');
-const loginBtn = document.getElementById('loginBtn');
-const userEmail = document.getElementById('userEmail');
-const syncBtn = document.getElementById('syncBtn');
+const CustomizationBtn = document.getElementById('CustomizationBtn')
 
 let isBlockingAds = false;
 
@@ -79,23 +77,6 @@ function displaySearchHistory() {
   });
 }
 
-// 履歴を消去するボタン
-clearHistoryBtn.addEventListener('click', () => {
-  chrome.storage.local.set({ searchHistory: [] }, () => {
-    displaySearchHistory();
-    alert('検索履歴が消去されました。');
-  });
-});
-
-// タブの管理ボタン
-openTabsBtn.addEventListener('click', () => {
-  chrome.tabs.query({}, (tabs) => {
-    const tabUrls = tabs.map(tab => tab.url);
-    console.log('開いているタブ: ', tabUrls);
-    alert(`現在開いているタブ数: ${tabs.length}`);
-  });
-});
-
 // 広告ブロック機能の切り替え
 blockAdsBtn.addEventListener('click', () => {
   isBlockingAds = !isBlockingAds;
@@ -126,57 +107,204 @@ function saveAdBlockState() {
   chrome.storage.local.set({ isBlockingAds: isBlockingAds });
 }
 
-// Googleアカウントログイン処理
-loginBtn.addEventListener('click', () => {
-  chrome.identity.getAuthToken({ interactive: true }, (token) => {
-    fetch('https://www.googleapis.com/oauth2/v1/userinfo?alt=json&access_token=' + token)
-      .then((response) => response.json())
-      .then((userInfo) => {
-        userEmail.textContent = userInfo.email;
-      });
-  });
-});
-
 // ページ読み込み時に初期状態を読み込む
 document.addEventListener('DOMContentLoaded', () => {
   loadAdBlockState();
-  loadSearchEnginePreference();
   displaySearchHistory();
 });
 
-// 検索エンジンの設定保存
-searchEngineSelect.addEventListener('change', () => {
-  const selectedEngine = searchEngineSelect.value;
-  chrome.storage.local.set({ selectedEngine: selectedEngine });
+// カスタマイズ設定ページを開く
+CustomizationBtn.addEventListener('click', () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('customize.html') });
 });
 
-// 検索エンジン設定の読み込み
-function loadSearchEnginePreference() {
-  chrome.storage.local.get({ selectedEngine: 'google' }, (result) => {
-    searchEngineSelect.value = result.selectedEngine;
-  });
-}
-
-// ページの要約機能を実装
+// 要約ボタンのクリックイベントリスナー
 summaryBtn.addEventListener('click', () => {
+  // 現在のタブを取得
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      func: summarizePageContent
-    });
+    if (tabs.length > 0) {
+      const tabId = tabs[0].id;
+      
+      // 要約機能をタブ内で実行
+      chrome.scripting.executeScript(
+        {
+          target: { tabId: tabId },
+          func: extractAndSummarizeContent,
+        },
+        (results) => {
+          if (chrome.runtime.lastError) {
+            console.error('スクリプトの実行中にエラーが発生しました:', chrome.runtime.lastError);
+            alert('要約に失敗しました。ページの構造を確認してください。');
+          } else if (results && results[0] && results[0].result) {
+            const summary = results[0].result;
+            displaySummary(summary);
+          } else {
+            alert('要約結果が取得できませんでした。');
+          }
+        }
+      );
+    } else {
+      alert('有効なタブが見つかりませんでした。');
+    }
   });
 });
 
-function summarizePageContent() {
-  // ページのテキストコンテンツを取得
-  let pageText = document.body.innerText;
+// ページの内容を抽出し要約する関数
+function extractAndSummarizeContent() {
+  // ページから主要なテキストを抽出
+  const elements = document.querySelectorAll('p, h1, h2, h3, h4, h5, h6');
+  let content = '';
+  elements.forEach((el) => {
+    const text = el.innerText.trim();
+    if (text && text.length > 50) {
+      content += text + ' ';
+    }
+  });
 
-  // 2000文字以内に制限（文単位で制限）
-  let truncatedText = pageText.slice(0, 2000);
+  // 重要文抽出 (長さベース)
+  const sentences = content.split(/(?<=。|\?|!)/);
+  const scoredSentences = sentences.map((sentence) => ({
+    text: sentence,
+    score: sentence.length, // 長い文を優先
+  }));
+  scoredSentences.sort((a, b) => b.score - a.score);
+  const topSentences = scoredSentences.slice(0, 5).map((s) => s.text);
 
-  // 2000文字の中で最後の文が途切れないように文の区切りで再調整
-  let sentences = truncatedText.split('. ').slice(0, -1).join('. ') + '.';
-
-  // 概要を表示
-  alert("ページの概要:\n" + sentences);
+  return topSentences.join('\n');
 }
+
+// 要約結果を表示する関数
+function displaySummary(summary) {
+  const summaryWindow = window.open('', '_blank', 'width=400,height=400');
+  summaryWindow.document.write(`
+    <html>
+      <head>
+        <title>ページ要約</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+          pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>ページ要約</h1>
+        <pre>${summary}</pre>
+      </body>
+    </html>
+  `);
+  summaryWindow.document.close();
+}
+
+
+
+// タブ管理ボタンのクリックイベント
+openTabsBtn.addEventListener('click', () => {
+  chrome.tabs.query({}, (tabs) => {
+    displayTabs(tabs);
+  });
+});
+
+// タブ情報を表示する関数
+function displayTabs(tabs) {
+  const tabWindow = window.open('', '_blank', 'width=600,height=400');
+  tabWindow.document.write(`
+    <html>
+      <head>
+        <title>タブ管理</title>
+        <style>
+          body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+          }
+          th, td {
+            padding: 8px;
+            border: 1px solid #ddd;
+            text-align: left;
+          }
+          th {
+            background-color: #f4f4f4;
+          }
+          button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+          }
+          button:hover {
+            background-color: #0056b3;
+          }
+        </style>
+      </head>
+      <body>
+        <h1>開いているタブ</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>タイトル</th>
+              <th>URL</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="tabList">
+          </tbody>
+        </table>
+        <button id="closeAllTabsBtn">すべてのタブを閉じる</button>
+      </body>
+    </html>
+  `);
+
+  const tabList = tabWindow.document.getElementById('tabList');
+  tabs.forEach((tab) => {
+    const row = tabWindow.document.createElement('tr');
+
+    const titleCell = tabWindow.document.createElement('td');
+    titleCell.textContent = tab.title || '（無題のタブ）';
+    row.appendChild(titleCell);
+
+    const urlCell = tabWindow.document.createElement('td');
+    const urlLink = tabWindow.document.createElement('a');
+    urlLink.href = tab.url;
+    urlLink.textContent = tab.url;
+    urlLink.target = '_blank';
+    urlCell.appendChild(urlLink);
+    row.appendChild(urlCell);
+
+    const actionCell = tabWindow.document.createElement('td');
+    const closeButton = tabWindow.document.createElement('button');
+    closeButton.textContent = '閉じる';
+    closeButton.addEventListener('click', () => {
+      chrome.tabs.remove(tab.id, () => {
+        row.remove();
+        alert(`タブ [${tab.title || tab.url}] を閉じました。`);
+      });
+    });
+    actionCell.appendChild(closeButton);
+    row.appendChild(actionCell);
+
+    tabList.appendChild(row);
+  });
+
+  const closeAllTabsBtn = tabWindow.document.getElementById('closeAllTabsBtn');
+  closeAllTabsBtn.addEventListener('click', () => {
+    const confirmClose = confirm('すべてのタブを閉じますか？');
+    if (confirmClose) {
+      const tabIds = tabs.map((tab) => tab.id);
+      chrome.tabs.remove(tabIds, () => {
+        tabWindow.close();
+        alert('すべてのタブを閉じました。');
+      });
+    }
+  });
+}
+
